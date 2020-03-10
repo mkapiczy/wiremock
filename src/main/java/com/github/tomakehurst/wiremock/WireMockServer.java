@@ -17,6 +17,7 @@ package com.github.tomakehurst.wiremock;
 
 import com.github.tomakehurst.wiremock.admin.model.*;
 import com.github.tomakehurst.wiremock.client.MappingBuilder;
+import com.github.tomakehurst.wiremock.client.VerificationException;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.common.FatalStartupException;
 import com.github.tomakehurst.wiremock.common.FileSource;
@@ -268,6 +269,49 @@ public class WireMockServer implements Container, Stubbing, Admin {
     @Override
     public void verify(int count, RequestPatternBuilder requestPatternBuilder) {
         client.verifyThat(count, requestPatternBuilder);
+    }
+
+    @Override
+    public void verifyWithTimeout(final RequestPatternBuilder requestPatternBuilder, long timeoutMs) {
+        verifyWithTimeout(new Runnable() {
+            @Override
+            public void run() {
+                client.verifyThat(requestPatternBuilder);
+            }
+        }, timeoutMs);
+    }
+
+    @Override
+    public void verifyWithTimeout(final int count, final RequestPatternBuilder requestPatternBuilder, long timeoutMs) {
+        verifyWithTimeout(new Runnable() {
+            @Override
+            public void run() {
+                client.verifyThat(count, requestPatternBuilder);
+            }
+        }, timeoutMs);
+    }
+
+    private void verifyWithTimeout(Runnable runnable, long timeoutMs){
+        final long checkIntervalInMs = 100;
+        final long numberOfChecks = timeoutMs / checkIntervalInMs;
+        VerificationException lastException = null;
+        for (int i = 0; i < numberOfChecks; i++) {
+            try {
+                runnable.run();
+                lastException = null;
+                break;
+            } catch (VerificationException e) {
+                lastException = e;
+                try {
+                    Thread.sleep(checkIntervalInMs);
+                } catch (InterruptedException ex) {
+                    throw lastException;
+                }
+            }
+        }
+        if (lastException != null) {
+            throw lastException;
+        }
     }
 
     @Override

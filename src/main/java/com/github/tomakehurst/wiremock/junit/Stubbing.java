@@ -41,7 +41,9 @@ public interface Stubbing {
     void removeStubMappingsByMetadata(StringValuePattern pattern);
 
     void verify(RequestPatternBuilder requestPatternBuilder);
+    void verifyWithTimeout(RequestPatternBuilder requestPatternBuilder, long timeoutMs);
     void verify(int count, RequestPatternBuilder requestPatternBuilder);
+    void verifyWithTimeout(int count, RequestPatternBuilder requestPatternBuilder, long timeoutMs);
     List<LoggedRequest> findAll(RequestPatternBuilder requestPatternBuilder);
     List<ServeEvent> getAllServeEvents();
 
